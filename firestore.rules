@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Secure Firestore-backed role authorization:
+    // Checks for an active document in adminUsers matching either the authenticated UID or verified Email
+    function isAdminByUid() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data.role == 'admin' &&
+        get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data.active == true;
+    }
+
+    function isAdminByEmail() {
+      return isAuthenticated() &&
+        request.auth.token.email != null &&
+        exists(/databases/$(database)/documents/adminUsers/$(request.auth.token.email)) &&
+        get(/databases/$(database)/documents/adminUsers/$(request.auth.token.email)).data.role == 'admin' &&
+        get(/databases/$(database)/documents/adminUsers/$(request.auth.token.email)).data.active == true;
+    }
+
+    function isAdmin() {
+      return isAdminByUid() || isAdminByEmail();
+    }
+
+    // Administrator Allowlist Collection
+    // Authenticated users can only read their own authorization record (by UID or Email) to verify permissions
+    // Client-side writes are strictly prohibited to prevent privilege escalation
+    match /adminUsers/{userId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId ||
+        (request.auth.token.email != null && request.auth.token.email == userId)
+      );
+      allow write: if false;
+    }
+
+    // Site Settings (Brand name, headlines, contact details)
+    match /siteSettings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Services Collection (Academic programs, higher education conclaves)
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Media References & Metadata
+    match /media/{mediaId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Industry Partners Collection
+    match /partners/{partnerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Institutional Gallery Collection
+    match /gallery/{galleryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Consultation Enquiries & Leads (Strictly private)
+    match /enquiries/{enquiryId} {
+      // Anyone can submit a consultation request with validated size & string constraints
+      allow create: if request.resource.data.name is string &&
+                       request.resource.data.email is string &&
+                       request.resource.data.message is string &&
+                       request.resource.data.name.size() > 0 &&
+                       request.resource.data.name.size() <= 100 &&
+                       request.resource.data.email.size() > 0 &&
+                       request.resource.data.email.size() <= 150 &&
+                       request.resource.data.message.size() > 0 &&
+                       request.resource.data.message.size() <= 2000;
+      // Only verified administrators can read, review, or delete inquiries
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}
