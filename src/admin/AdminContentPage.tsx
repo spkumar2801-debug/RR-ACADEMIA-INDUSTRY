@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { getSiteSettings, saveSiteSettings } from "../services/contentService";
+import { useSiteContent } from "../context/SiteContentContext";
 import type { SiteSettings } from "../config/siteContent";
 import { Save, CheckCircle2, Globe, Mail } from "lucide-react";
 
 export const AdminContentPage: React.FC = () => {
+  const { refreshContent } = useSiteContent();
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [savedMessage, setSavedMessage] = useState(false);
@@ -23,6 +25,7 @@ export const AdminContentPage: React.FC = () => {
 
     try {
       await saveSiteSettings(settings);
+      await refreshContent();
       setSavedMessage(true);
       setTimeout(() => setSavedMessage(false), 3000);
     } catch (e) {

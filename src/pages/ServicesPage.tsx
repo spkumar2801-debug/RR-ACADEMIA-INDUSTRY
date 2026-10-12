@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { useSiteContent } from "../context/SiteContentContext";
 import { ImageSlot } from "../components/common/ImageSlot";
 import {
@@ -12,6 +12,18 @@ import {
 export const ServicesPage: React.FC = () => {
   const { services } = useSiteContent();
   const [searchTerm, setSearchTerm] = useState("");
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      const el = document.querySelector(location.hash);
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: "smooth" });
+        }, 150);
+      }
+    }
+  }, [location.hash]);
 
   const activeServices = (services && services.length > 0 ? services : [])
     .filter((s) => s.published !== false)

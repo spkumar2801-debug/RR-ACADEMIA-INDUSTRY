@@ -1,14 +1,97 @@
 rules_version = '2';
+
+// ============================================================================
+// RR ACADEMIA & INDUSTRY CONNECT — CLOUD FIRESTORE SECURITY RULES
+// ============================================================================
+//
+// Assumed Data Model:
+//
+// 1. Collection: adminUsers
+//    Document ID: {userId} (Firebase Auth UID, or verified administrator Email)
+//    Fields:
+//      - uid: string (Firebase User UID)
+//      - email: string (Administrator Email address)
+//      - role: string (Must be 'admin')
+//      - active: bool (Account activation state)
+//      - createdAt: timestamp/string (optional)
+//      - updatedAt: timestamp/string (optional)
+//    Security: Client-side writes STRICTLY FORBIDDEN. Read restricted to self.
+//
+// 2. Collection: siteSettings
+//    Document ID: 'main'
+//    Fields:
+//      - heroHeadline, heroSubheadline: string
+//      - statsYears, statsPartners, statsPrograms, statsStudents: string/number
+//      - contactEmail, contactPhone, address: string
+//      - updatedAt: timestamp
+//    Security: Public read. Writes restricted to verified administrators.
+//
+// 3. Collection: services
+//    Document ID: {serviceId}
+//    Fields:
+//      - title, slug, description, category: string
+//      - published: bool
+//      - sortOrder / order: number
+//      - updatedAt: timestamp
+//    Security: Public read. Writes restricted to verified administrators.
+//
+// 4. Collection: media
+//    Document ID: {mediaId} (e.g. 'hero_main', 'about_featured')
+//    Fields:
+//      - url, alt, label: string
+//      - cloudinaryPublicId: string (optional)
+//      - updatedAt: timestamp
+//    Security: Public read. Writes restricted to verified administrators.
+//
+// 5. Collection: partners
+//    Document ID: {partnerId}
+//    Fields:
+//      - name, category, websiteUrl, description: string
+//      - logoUrl: string (optional)
+//      - sortOrder: number
+//      - published: bool
+//      - updatedAt: timestamp
+//    Security: Public read. Writes restricted to verified administrators.
+//
+// 6. Collection: gallery
+//    Document ID: {galleryId}
+//    Fields:
+//      - title, caption, imageUrl, altText, category, date, location: string
+//      - cloudinaryPublicId: string (optional)
+//      - sortOrder: number
+//      - published: bool
+//      - updatedAt: timestamp
+//    Security: Public read. Writes restricted to verified administrators.
+//
+// 7. Collection: enquiries
+//    Document ID: {enquiryId} (Auto-generated)
+//    Fields:
+//      - name: string (1..100 chars)
+//      - email: string (1..150 chars)
+//      - message: string (1..2000 chars)
+//      - phone: string (optional, <= 30 chars)
+//      - organization: string (optional, <= 120 chars)
+//      - serviceCategory: string (optional, <= 100 chars)
+//      - status: string (Initial state MUST be 'new')
+//      - createdAt: timestamp
+//    Security: Public create with strict schema validation.
+//              Read, update, delete STRICTLY RESTRICTED to verified administrators.
+//
+// ============================================================================
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // ------------------------------------------------------------------------
+    // Authentication & Role Helper Functions
+    // ------------------------------------------------------------------------
+
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Secure Firestore-backed role authorization:
-    // Checks for an active document in adminUsers matching either the authenticated UID or verified Email
+    // Role-based authorization verified directly against Cloud Firestore allowlist
+    // Validates that request.auth.uid exists in adminUsers with role=='admin' and active==true
     function isAdminByUid() {
       return isAuthenticated() &&
         exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid)) &&
@@ -16,9 +99,11 @@ service cloud.firestore {
         get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data.active == true;
     }
 
+    // Secondary email allowlist check: requires email_verified == true to eliminate impersonation risks
     function isAdminByEmail() {
       return isAuthenticated() &&
         request.auth.token.email != null &&
+        request.auth.token.email_verified == true &&
         exists(/databases/$(database)/documents/adminUsers/$(request.auth.token.email)) &&
         get(/databases/$(database)/documents/adminUsers/$(request.auth.token.email)).data.role == 'admin' &&
         get(/databases/$(database)/documents/adminUsers/$(request.auth.token.email)).data.active == true;
@@ -28,61 +113,97 @@ service cloud.firestore {
       return isAdminByUid() || isAdminByEmail();
     }
 
-    // Administrator Allowlist Collection
-    // Authenticated users can only read their own authorization record (by UID or Email) to verify permissions
-    // Client-side writes are strictly prohibited to prevent privilege escalation
+    // ------------------------------------------------------------------------
+    // Validation Helper Functions
+    // ------------------------------------------------------------------------
+
+    function isValidEnquirySubmission(data) {
+      return data.keys().hasOnly(['name', 'email', 'phone', 'organization', 'serviceCategory', 'message', 'status', 'createdAt', 'id']) &&
+             data.name is string &&
+             data.name.size() > 0 &&
+             data.name.size() <= 100 &&
+             data.email is string &&
+             data.email.size() > 0 &&
+             data.email.size() <= 150 &&
+             data.message is string &&
+             data.message.size() > 0 &&
+             data.message.size() <= 2000 &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() <= 30)) &&
+             (!('organization' in data) || (data.organization is string && data.organization.size() <= 120)) &&
+             (!('serviceCategory' in data) || (data.serviceCategory is string && data.serviceCategory.size() <= 100)) &&
+             (!('status' in data) || data.status == 'new');
+    }
+
+    // ------------------------------------------------------------------------
+    // Collection 1: Administrator Allowlist Directory (adminUsers)
+    // ------------------------------------------------------------------------
+    // Authenticated users can only read their own document to verify administrative privileges.
+    // Client-side writes are strictly prohibited to prevent privilege escalation.
     match /adminUsers/{userId} {
       allow read: if isAuthenticated() && (
         request.auth.uid == userId ||
-        (request.auth.token.email != null && request.auth.token.email == userId)
+        (request.auth.token.email != null && request.auth.token.email_verified == true && request.auth.token.email == userId)
       );
       allow write: if false;
     }
 
-    // Site Settings (Brand name, headlines, contact details)
+    // ------------------------------------------------------------------------
+    // Collection 2: Website Settings (siteSettings)
+    // ------------------------------------------------------------------------
     match /siteSettings/{settingId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Services Collection (Academic programs, higher education conclaves)
+    // ------------------------------------------------------------------------
+    // Collection 3: Academic & Industry Services (services)
+    // ------------------------------------------------------------------------
     match /services/{serviceId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Media References & Metadata
+    // ------------------------------------------------------------------------
+    // Collection 4: Media Slots & Banner Registries (media)
+    // ------------------------------------------------------------------------
     match /media/{mediaId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Industry Partners Collection
+    // ------------------------------------------------------------------------
+    // Collection 5: Strategic Industry Partners (partners)
+    // ------------------------------------------------------------------------
     match /partners/{partnerId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Institutional Gallery Collection
+    // ------------------------------------------------------------------------
+    // Collection 6: Institutional Event Gallery (gallery)
+    // ------------------------------------------------------------------------
     match /gallery/{galleryId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Consultation Enquiries & Leads (Strictly private)
+    // ------------------------------------------------------------------------
+    // Collection 7: Private Consultation Leads & Enquiries (enquiries)
+    // ------------------------------------------------------------------------
+    // Public visitors can submit genuine consultation requests with strict schema constraints.
+    // Unauthenticated reads and listings are strictly forbidden (prevents lead data leaks).
+    // Only verified administrators can review dossiers, update status, or delete records.
     match /enquiries/{enquiryId} {
-      // Anyone can submit a consultation request with validated size & string constraints
-      allow create: if request.resource.data.name is string &&
-                       request.resource.data.email is string &&
-                       request.resource.data.message is string &&
-                       request.resource.data.name.size() > 0 &&
-                       request.resource.data.name.size() <= 100 &&
-                       request.resource.data.email.size() > 0 &&
-                       request.resource.data.email.size() <= 150 &&
-                       request.resource.data.message.size() > 0 &&
-                       request.resource.data.message.size() <= 2000;
-      // Only verified administrators can read, review, or delete inquiries
+      allow create: if isValidEnquirySubmission(request.resource.data);
       allow read, update, delete: if isAdmin();
+    }
+
+    // ------------------------------------------------------------------------
+    // Default Deny Rule
+    // ------------------------------------------------------------------------
+    // Deny read and write access to any undefined collection or path
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

@@ -477,13 +477,25 @@ export const verifiedPartners: PartnerItem[] = [
 
 export const verifiedGalleryItems: GalleryItem[] = [
   {
+    id: "gal-brand-identity",
+    title: "RR Academia & Industry Connect — Brand Identity",
+    caption: "Official institutional emblem combining 3D metallic RR monogram, interconnected molecular nodes, and corporate collaboration identity.",
+    imageUrl: "/images/rr-logo-master.png",
+    altText: "RR Academia & Industry Connect — Brand Identity",
+    category: "mou",
+    sortOrder: 1,
+    published: true,
+    date: "Brand Identity Release",
+    location: "Executive Directorate"
+  },
+  {
     id: "gal-1",
     title: "Grand Auditorium Industry Summit",
     caption: "Over 2,500 students and academic deans gathered for the national Industry–Academia Conclave.",
     imageUrl: "/images/grand-auditorium-summit.jpg",
     altText: "Packed auditorium at RR Academia & Industry Summit with corporate dignitaries",
     category: "summits",
-    sortOrder: 1,
+    sortOrder: 2,
     published: true,
     date: "Annual Conclave",
     location: "Main Convention Center"
@@ -495,7 +507,7 @@ export const verifiedGalleryItems: GalleryItem[] = [
     imageUrl: "/images/students-google-amg-connect.jpg",
     altText: "Engineering students attending Google & AMG career orientation program",
     category: "orientations",
-    sortOrder: 2,
+    sortOrder: 3,
     published: true,
     date: "Corporate Orientation",
     location: "Auditorium Hall"
@@ -507,7 +519,7 @@ export const verifiedGalleryItems: GalleryItem[] = [
     imageUrl: "/images/industry-leadership-lighting.jpg",
     altText: "Corporate executives and academic heads performing the inaugural lamp lighting",
     category: "summits",
-    sortOrder: 3,
+    sortOrder: 4,
     published: true,
     date: "Inaugural Ceremony",
     location: "Executive Stage"
@@ -519,7 +531,7 @@ export const verifiedGalleryItems: GalleryItem[] = [
     imageUrl: "/images/inauguration-ribbon-cutting.jpg",
     altText: "Leadership cutting ribbon for the new institutional collaboration facility",
     category: "mou",
-    sortOrder: 4,
+    sortOrder: 5,
     published: true,
     date: "Campus Launch",
     location: "Technology Block"
@@ -531,7 +543,7 @@ export const verifiedGalleryItems: GalleryItem[] = [
     imageUrl: "/images/summit-keynote-podium.jpg",
     altText: "Keynote speaker addressing university vice-chancellors and corporate delegates",
     category: "summits",
-    sortOrder: 5,
+    sortOrder: 6,
     published: true,
     date: "Executive Keynote",
     location: "Summit Stage"
@@ -543,9 +555,10 @@ export const verifiedGalleryItems: GalleryItem[] = [
     imageUrl: "/images/original-curriculum.jpg",
     altText: "Faculty and corporate mentors working together on curriculum enhancement",
     category: "workshops",
-    sortOrder: 6,
+    sortOrder: 7,
     published: true,
     date: "Academic Review",
     location: "Academic Council Room"
   }
 ];
+

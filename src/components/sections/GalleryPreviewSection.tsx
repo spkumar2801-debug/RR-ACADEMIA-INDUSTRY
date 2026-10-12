@@ -14,6 +14,15 @@ export const GalleryPreviewSection: React.FC = () => {
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .slice(0, 4);
 
+  const gridLayout =
+    previewItems.length === 1
+      ? "grid-cols-1 max-w-md mx-auto"
+      : previewItems.length === 2
+      ? "grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto"
+      : previewItems.length === 3
+      ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+      : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
+
   return (
     <section
       id="gallery-preview"
@@ -56,9 +65,9 @@ export const GalleryPreviewSection: React.FC = () => {
           </Link>
         </div>
 
-        {/* 4-Item Curated Visual Grid */}
+        {/* Curated Visual Grid (Adaptively balanced) */}
         <div
-          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 transition-all duration-700 delay-100 ${
+          className={`grid ${gridLayout} gap-5 sm:gap-6 transition-all duration-700 delay-100 ${
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           }`}
         >

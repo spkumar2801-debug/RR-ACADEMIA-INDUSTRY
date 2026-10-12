@@ -52,10 +52,23 @@ export const HeroSection: React.FC = () => {
                 fontSize: "clamp(1.85rem, 4.2vw + 0.75rem, 3.75rem)"
               }}
             >
-              Where Academia Meets{" "}
-              <span className="text-gold-gradient block sm:inline mt-1 sm:mt-0">
-                Industry Excellence
-              </span>
+              {(() => {
+                const headline = siteSettings.heroHeadline || "Where Academia Meets Industry Excellence";
+                const words = headline.trim().split(/\s+/);
+                if (words.length > 2) {
+                  const firstPart = words.slice(0, -2).join(" ");
+                  const goldPart = words.slice(-2).join(" ");
+                  return (
+                    <>
+                      {firstPart}{" "}
+                      <span className="text-gold-gradient block sm:inline mt-1 sm:mt-0">
+                        {goldPart}
+                      </span>
+                    </>
+                  );
+                }
+                return headline;
+              })()}
             </h1>
 
             {/* Lead Narrative */}

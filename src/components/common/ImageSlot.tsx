@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { getMediaItem } from "../../config/media";
 import { getOptimizedImageUrl } from "../../services/cloudinary";
+import { useSiteContent } from "../../context/SiteContentContext";
 
 interface ImageSlotProps {
   slotKey: string;
@@ -27,8 +28,9 @@ export const ImageSlot: React.FC<ImageSlotProps> = ({
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const { media: contextMedia } = useSiteContent();
 
-  const media = getMediaItem(slotKey);
+  const media = contextMedia?.[slotKey] || getMediaItem(slotKey);
   const resolvedAspect = aspectRatio || media.aspectRatio || "16/9";
   const imageSrc = getOptimizedImageUrl(media.url);
   const altText = alt || media.alt || media.title || "RR Academia & Industry Connect Media";

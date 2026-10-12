@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getMediaRegistry, saveMediaItem } from "../services/contentService";
+import { useSiteContent } from "../context/SiteContentContext";
 import type { MediaItem } from "../config/media";
 import { uploadImage, isCloudinaryConfigured, cloudinaryConfig } from "../services/cloudinary";
 import {
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 
 export const AdminMediaPage: React.FC = () => {
+  const { refreshContent } = useSiteContent();
   const [mediaMap, setMediaMap] = useState<Record<string, MediaItem>>({});
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
@@ -63,6 +65,7 @@ export const AdminMediaPage: React.FC = () => {
       };
 
       await saveMediaItem(slotKey, updated);
+      await refreshContent();
       await loadMedia();
       setStatusMessage(
         result.isMock
@@ -84,6 +87,7 @@ export const AdminMediaPage: React.FC = () => {
 
     try {
       await saveMediaItem(editingItem.slotKey, editingItem);
+      await refreshContent();
       setStatusMessage(`Metadata for slot "${editingItem.slotKey}" updated.`);
       setEditingItem(null);
       await loadMedia();

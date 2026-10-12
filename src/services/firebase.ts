@@ -8,7 +8,7 @@ import type { Firestore } from "firebase/firestore";
 // Public Firebase Client Configuration
 // Reads from Vite environment variables (VITE_ prefix) with verified project fallbacks
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCyx3-TJnPE6MXFcPYu0sjc-0EpkeP_VCo",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCyx3-TJnPE6MXFcYPu0sjc-0EpkeP_VCo",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "rr-academia.firebaseapp.com",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "rr-academia",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "rr-academia.firebasestorage.app",

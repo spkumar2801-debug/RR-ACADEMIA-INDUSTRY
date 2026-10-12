@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate, Navigate } from "react-router-dom";
 import { useAdminAuth } from "./AdminAuthContext";
 import { Logo } from "../components/common/Logo";
 import {
@@ -39,8 +39,7 @@ export const AdminLayout: React.FC = () => {
 
   // If not logged in or unauthorized, redirect immediately to login
   if (!user || !adminData) {
-    navigate("/admin/login");
-    return null;
+    return <Navigate to="/admin/login" replace />;
   }
 
   const navItems = [

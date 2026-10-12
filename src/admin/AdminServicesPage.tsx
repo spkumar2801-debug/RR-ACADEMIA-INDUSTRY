@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getServices, saveService, deleteService } from "../services/contentService";
+import { useSiteContent } from "../context/SiteContentContext";
 import type { ServiceItem } from "../config/siteContent";
 import {
   Plus,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 
 export const AdminServicesPage: React.FC = () => {
+  const { refreshContent } = useSiteContent();
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingService, setEditingService] = useState<ServiceItem | null>(null);
@@ -42,6 +44,7 @@ export const AdminServicesPage: React.FC = () => {
 
     try {
       await saveService(editingService);
+      await refreshContent();
       setStatusMessage(`Service "${editingService.title}" successfully saved.`);
       setEditingService(null);
       await loadServices();
@@ -54,6 +57,7 @@ export const AdminServicesPage: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       await deleteService(id);
+      await refreshContent();
       setStatusMessage("Service successfully removed.");
       setDeleteConfirmId(null);
       await loadServices();

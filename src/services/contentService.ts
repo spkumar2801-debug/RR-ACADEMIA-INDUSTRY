@@ -5,7 +5,6 @@ import {
   getDocs,
   getDoc,
   setDoc,
-  deleteDoc,
   addDoc,
   serverTimestamp,
   query,
@@ -51,16 +50,25 @@ const LOCAL_STORAGE_PARTNERS_KEY = "rr_academia_partners_override";
 const LOCAL_STORAGE_GALLERY_KEY = "rr_academia_gallery_override";
 
 export async function getServices(): Promise<ServiceItem[]> {
+  const itemsMap = new Map<string, ServiceItem>();
+  for (const seed of verifiedServices) {
+    itemsMap.set(seed.id, { ...seed });
+  }
+
   if (isFirebaseInitialized && db) {
     try {
       const colRef = collection(db, "services");
       const q = query(colRef, orderBy("order", "asc"));
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
-        return snapshot.docs.map((docSnap) => ({
-          ...docSnap.data(),
-          id: docSnap.id
-        })) as ServiceItem[];
+        snapshot.docs.forEach((docSnap) => {
+          const data = { ...docSnap.data(), id: docSnap.id } as ServiceItem & { deleted?: boolean };
+          if (data.deleted === true) {
+            itemsMap.delete(docSnap.id);
+          } else {
+            itemsMap.set(docSnap.id, data);
+          }
+        });
       }
     } catch (e) {
       console.warn("Could not fetch services from Firestore, falling back to verified seed:", e);
@@ -70,11 +78,16 @@ export async function getServices(): Promise<ServiceItem[]> {
   const local = localStorage.getItem(LOCAL_STORAGE_SERVICES_KEY);
   if (local) {
     try {
-      return JSON.parse(local);
-    } catch {}
+      const localItems: ServiceItem[] = JSON.parse(local);
+      for (const item of localItems) {
+        if (!itemsMap.has(item.id)) {
+          itemsMap.set(item.id, item);
+        }
+      }
+    } catch { }
   }
 
-  return verifiedServices;
+  return Array.from(itemsMap.values()).sort((a, b) => (a.order || 0) - (b.order || 0));
 }
 
 export async function saveService(service: ServiceItem): Promise<void> {
@@ -94,6 +107,7 @@ export async function saveService(service: ServiceItem): Promise<void> {
       const docRef = doc(db, "services", service.id);
       await setDoc(docRef, {
         ...service,
+        deleted: false,
         updatedAt: serverTimestamp()
       }, { merge: true });
     } catch (e) {
@@ -109,7 +123,8 @@ export async function deleteService(serviceId: string): Promise<void> {
 
   if (isFirebaseInitialized && db) {
     try {
-      await deleteDoc(doc(db, "services", serviceId));
+      const docRef = doc(db, "services", serviceId);
+      await setDoc(docRef, { deleted: true, published: false, updatedAt: serverTimestamp() }, { merge: true });
     } catch (e) {
       console.warn("Firestore deleteService failed:", e);
     }
@@ -133,7 +148,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   if (local) {
     try {
       return { ...defaultSiteSettings, ...JSON.parse(local) };
-    } catch {}
+    } catch { }
   }
 
   return defaultSiteSettings;
@@ -177,7 +192,7 @@ export async function getMediaRegistry(): Promise<Record<string, MediaItem>> {
     try {
       const parsed = JSON.parse(local);
       overrides = { ...overrides, ...parsed };
-    } catch {}
+    } catch { }
   }
 
   setMediaOverrides(overrides);
@@ -188,7 +203,7 @@ export async function saveMediaItem(slotKey: string, item: MediaItem): Promise<v
   const local = localStorage.getItem(LOCAL_STORAGE_MEDIA_KEY);
   let parsed: Record<string, MediaItem> = {};
   if (local) {
-    try { parsed = JSON.parse(local); } catch {}
+    try { parsed = JSON.parse(local); } catch { }
   }
   parsed[slotKey] = item;
   localStorage.setItem(LOCAL_STORAGE_MEDIA_KEY, JSON.stringify(parsed));
@@ -256,7 +271,7 @@ export async function getEnquiries(): Promise<EnquirySubmission[]> {
   if (local) {
     try {
       return JSON.parse(local);
-    } catch {}
+    } catch { }
   }
 
   return [
@@ -294,16 +309,25 @@ export async function updateEnquiryStatus(id: string, status: 'new' | 'reviewed'
 // --------------------------------------------------------------------------
 
 export async function getPartners(): Promise<PartnerItem[]> {
+  const itemsMap = new Map<string, PartnerItem>();
+  for (const seed of verifiedPartners) {
+    itemsMap.set(seed.id, { ...seed });
+  }
+
   if (isFirebaseInitialized && db) {
     try {
       const colRef = collection(db, "partners");
       const q = query(colRef, orderBy("sortOrder", "asc"));
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
-        return snapshot.docs.map((docSnap) => ({
-          ...docSnap.data(),
-          id: docSnap.id
-        })) as PartnerItem[];
+        snapshot.docs.forEach((docSnap) => {
+          const data = { ...docSnap.data(), id: docSnap.id } as PartnerItem & { deleted?: boolean };
+          if (data.deleted === true) {
+            itemsMap.delete(docSnap.id);
+          } else {
+            itemsMap.set(docSnap.id, data);
+          }
+        });
       }
     } catch (e) {
       console.warn("Could not fetch partners from Firestore, falling back to local/seed:", e);
@@ -313,11 +337,16 @@ export async function getPartners(): Promise<PartnerItem[]> {
   const local = localStorage.getItem(LOCAL_STORAGE_PARTNERS_KEY);
   if (local) {
     try {
-      return JSON.parse(local);
-    } catch {}
+      const localItems: PartnerItem[] = JSON.parse(local);
+      for (const item of localItems) {
+        if (!itemsMap.has(item.id)) {
+          itemsMap.set(item.id, item);
+        }
+      }
+    } catch { }
   }
 
-  return verifiedPartners;
+  return Array.from(itemsMap.values()).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 }
 
 export async function savePartner(partner: PartnerItem): Promise<void> {
@@ -337,6 +366,7 @@ export async function savePartner(partner: PartnerItem): Promise<void> {
       const docRef = doc(db, "partners", partner.id);
       await setDoc(docRef, {
         ...partner,
+        deleted: false,
         updatedAt: serverTimestamp()
       }, { merge: true });
     } catch (e) {
@@ -352,7 +382,8 @@ export async function deletePartner(partnerId: string): Promise<void> {
 
   if (isFirebaseInitialized && db) {
     try {
-      await deleteDoc(doc(db, "partners", partnerId));
+      const docRef = doc(db, "partners", partnerId);
+      await setDoc(docRef, { deleted: true, published: false, updatedAt: serverTimestamp() }, { merge: true });
     } catch (e) {
       console.warn("Firestore deletePartner failed:", e);
     }
@@ -364,16 +395,26 @@ export async function deletePartner(partnerId: string): Promise<void> {
 // --------------------------------------------------------------------------
 
 export async function getGalleryItems(): Promise<GalleryItem[]> {
+  const itemsMap = new Map<string, GalleryItem>();
+  for (const seed of verifiedGalleryItems) {
+    itemsMap.set(seed.id, { ...seed });
+  }
+
   if (isFirebaseInitialized && db) {
     try {
       const colRef = collection(db, "gallery");
       const q = query(colRef, orderBy("sortOrder", "asc"));
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
-        return snapshot.docs.map((docSnap) => ({
-          ...docSnap.data(),
-          id: docSnap.id
-        })) as GalleryItem[];
+        snapshot.docs.forEach((docSnap) => {
+          const data = { ...docSnap.data(), id: docSnap.id } as GalleryItem & { deleted?: boolean };
+          if (data.deleted === true) {
+            itemsMap.delete(docSnap.id);
+          } else {
+            // Live Firestore data (including user-uploaded Cloudinary URLs) takes full precedence!
+            itemsMap.set(docSnap.id, data);
+          }
+        });
       }
     } catch (e) {
       console.warn("Could not fetch gallery from Firestore, falling back to local/seed:", e);
@@ -383,11 +424,16 @@ export async function getGalleryItems(): Promise<GalleryItem[]> {
   const local = localStorage.getItem(LOCAL_STORAGE_GALLERY_KEY);
   if (local) {
     try {
-      return JSON.parse(local);
-    } catch {}
+      const localItems: GalleryItem[] = JSON.parse(local);
+      for (const item of localItems) {
+        if (!itemsMap.has(item.id)) {
+          itemsMap.set(item.id, item);
+        }
+      }
+    } catch { }
   }
 
-  return verifiedGalleryItems;
+  return Array.from(itemsMap.values()).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 }
 
 export async function saveGalleryItem(item: GalleryItem): Promise<void> {
@@ -407,6 +453,7 @@ export async function saveGalleryItem(item: GalleryItem): Promise<void> {
       const docRef = doc(db, "gallery", item.id);
       await setDoc(docRef, {
         ...item,
+        deleted: false,
         updatedAt: serverTimestamp()
       }, { merge: true });
     } catch (e) {
@@ -422,7 +469,8 @@ export async function deleteGalleryItem(itemId: string): Promise<void> {
 
   if (isFirebaseInitialized && db) {
     try {
-      await deleteDoc(doc(db, "gallery", itemId));
+      const docRef = doc(db, "gallery", itemId);
+      await setDoc(docRef, { deleted: true, published: false, updatedAt: serverTimestamp() }, { merge: true });
     } catch (e) {
       console.warn("Firestore deleteGalleryItem failed:", e);
     }

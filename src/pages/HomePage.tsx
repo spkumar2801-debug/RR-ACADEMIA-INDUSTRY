@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { HeroSection } from "../components/sections/HeroSection";
 import { AboutSection } from "../components/sections/AboutSection";
 import { ServicesPreviewSection } from "../components/sections/ServicesPreviewSection";
@@ -7,15 +8,17 @@ import { GalleryPreviewSection } from "../components/sections/GalleryPreviewSect
 import { ContactSection } from "../components/sections/ContactSection";
 
 export const HomePage: React.FC = () => {
+  const location = useLocation();
+
   useEffect(() => {
-    // Handle anchor links on initial navigation
-    if (window.location.hash) {
-      const el = document.querySelector(window.location.hash);
+    // Handle anchor links on initial navigation and hash change
+    if (location.hash) {
+      const el = document.querySelector(location.hash);
       if (el) {
         el.scrollIntoView({ behavior: "smooth" });
       }
     }
-  }, []);
+  }, [location.hash]);
 
   return (
     <main className="w-full">

@@ -53,21 +53,44 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     try {
       let adminDocRef = doc(db, "adminUsers", authUser.uid);
-      let adminDocSnap = await getDoc(adminDocRef);
+      let adminDocSnap = null;
+      let lastError: any = null;
 
-      // Fallback: Check if document was created with email as Document ID
-      if (!adminDocSnap.exists() && authUser.email) {
-        try {
-          const emailDocRef = doc(db, "adminUsers", authUser.email);
-          const emailDocSnap = await getDoc(emailDocRef);
-          if (emailDocSnap.exists()) {
-            adminDocRef = emailDocRef;
-            adminDocSnap = emailDocSnap;
-          }
-        } catch {}
+      // 1. Check by UID as Document ID
+      try {
+        const snap = await getDoc(adminDocRef);
+        if (snap.exists()) {
+          adminDocSnap = snap;
+        }
+      } catch (uidErr: any) {
+        lastError = uidErr;
       }
 
-      if (!adminDocSnap.exists()) {
+      // 2. Fallback: Check if document was created with email as Document ID
+      if ((!adminDocSnap || !adminDocSnap.exists()) && authUser.email) {
+        const emailKeys = [authUser.email.trim(), authUser.email.trim().toLowerCase()];
+        for (const emailKey of emailKeys) {
+          try {
+            const emailDocRef = doc(db, "adminUsers", emailKey);
+            const emailSnap = await getDoc(emailDocRef);
+            if (emailSnap.exists()) {
+              adminDocRef = emailDocRef;
+              adminDocSnap = emailSnap;
+              lastError = null;
+              break;
+            }
+          } catch (emailErr: any) {
+            if (!lastError) lastError = emailErr;
+          }
+        }
+      }
+
+      // If both checks failed with an error and no doc was found
+      if (!adminDocSnap || !adminDocSnap.exists()) {
+        if (lastError && (lastError.code === "permission-denied" || lastError.message?.includes("Missing or insufficient permissions"))) {
+          throw lastError;
+        }
+
         const notFoundErr: any = new Error(
           `Authentication succeeded, but neither UID "${authUser.uid}" nor email "${authUser.email || ""}" is registered in the administrator directory (adminUsers collection in Cloud Firestore).`
         );

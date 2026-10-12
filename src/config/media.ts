@@ -121,8 +121,19 @@ export const defaultMediaItems: Record<string, MediaItem> = {
     alt: 'Advanced research laboratory and industrial consultancy',
     category: 'service',
     aspectRatio: '16/9'
+  },
+  brandLogo: {
+    id: 'brand-logo',
+    slotKey: 'brandLogo',
+    title: 'RR Academia & Industry Connect — Brand Identity',
+    description: 'Official molecular monogram and institutional logo mark representing the bridge between academia and industry.',
+    url: '/images/rr-logo-master.png',
+    alt: 'RR Academia & Industry Connect Brand Identity',
+    category: 'branding',
+    aspectRatio: '16/9'
   }
 };
+
 
 /**
  * Registry mapping slot keys to current media items.

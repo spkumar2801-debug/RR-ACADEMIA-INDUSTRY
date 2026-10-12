@@ -11,8 +11,8 @@ export interface CloudinaryConfig {
 }
 
 export const cloudinaryConfig: CloudinaryConfig = {
-  cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "",
-  uploadPreset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || ""
+  cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "e8mmudhk",
+  uploadPreset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "RR Academia"
 };
 
 export function isCloudinaryConfigured(): boolean {
