@@ -162,50 +162,71 @@ export const AdminLoginPage: React.FC = () => {
 
                 <div className="space-y-1.5 text-slate-300">
                   <p className="font-semibold text-[#E5C158]">
-                    {authAttempt.stage === "firestore-permission-denied"
-                      ? "Resolution: Update Firestore Rules & Register UID"
-                      : "Resolution: Register UID in adminUsers Collection"}
+                    {authAttempt.stage === "firestore-permission-denied" && "Resolution: Publish Firestore Rules in Firebase Console"}
+                    {authAttempt.stage === "allowlist-missing" && "Resolution: Register UID in adminUsers Collection"}
+                    {authAttempt.stage === "role-denied" && "Resolution: Administrative Privilege Required"}
+                    {authAttempt.stage === "auth-failed" && "Resolution: Verify Identity Credentials"}
                   </p>
 
-                  <ol className="list-decimal pl-4 space-y-1 text-[11px] text-slate-400 leading-relaxed">
-                    <li>
-                      Open{" "}
-                      <a
-                        href="https://console.firebase.google.com/project/rr-academia/firestore/rules"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[#E5C158] underline inline-flex items-center gap-0.5"
-                      >
-                        Firebase Console &gt; Firestore Rules <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                      , paste the verified <code className="text-white font-mono">firestore.rules</code> file from this workspace, and click <strong className="text-white">Publish</strong>.
-                    </li>
-                    <li>
-                      Open{" "}
-                      <a
-                        href="https://console.firebase.google.com/project/rr-academia/firestore/data"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[#E5C158] underline inline-flex items-center gap-0.5"
-                      >
-                        Firestore &gt; Data <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                      , open or create collection <strong className="text-white font-mono">adminUsers</strong>, and click <strong className="text-white">Add document</strong>.
-                    </li>
-                    <li>
-                      Set <strong className="text-white">Document ID</strong> to your copied UID: <code className="text-[#E5C158] font-mono font-bold">{authAttempt.uid}</code> <em className="text-amber-300">(Do NOT use your email address as Document ID!)</em>.
-                    </li>
-                    <li>
-                      Add these exact document fields:
-                      <div className="bg-slate-950 p-2 rounded-lg font-mono text-[10px] text-slate-300 mt-1 space-y-0.5">
-                        <div>uid: &quot;{authAttempt.uid}&quot; (string)</div>
-                        <div>email: &quot;{authAttempt.email}&quot; (string)</div>
-                        <div>role: &quot;admin&quot; (string)</div>
-                        <div>active: true (boolean)</div>
-                      </div>
-                    </li>
-                    <li>Click <strong className="text-white">Save</strong>, then click &quot;Sign In to Dashboard&quot; below.</li>
-                  </ol>
+                  {authAttempt.stage === "firestore-permission-denied" && (
+                    <ol className="list-decimal pl-4 space-y-1 text-[11px] text-slate-400 leading-relaxed">
+                      <li>
+                        Open{" "}
+                        <a
+                          href="https://console.firebase.google.com/project/rr-academia/firestore/rules"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#E5C158] underline inline-flex items-center gap-0.5"
+                        >
+                          Firebase Console &gt; Firestore Rules <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                        , paste the verified <code className="text-white font-mono">firestore.rules</code> file from this workspace, and click <strong className="text-white">Publish</strong>.
+                      </li>
+                      <li>
+                        Confirm that collection <strong className="text-white font-mono">adminUsers</strong> has a document whose <strong className="text-white">Document ID</strong> matches your verified UID: <code className="text-[#E5C158] font-mono font-bold">{authAttempt.uid}</code>.
+                      </li>
+                      <li>
+                        Ensure the document fields are correctly typed: <code className="text-white font-mono">active: true</code> (boolean) and <code className="text-white font-mono">role: &quot;admin&quot;</code> (string).
+                      </li>
+                      <li>Click &quot;Sign In to Dashboard&quot; below once published.</li>
+                    </ol>
+                  )}
+
+                  {authAttempt.stage === "allowlist-missing" && (
+                    <ol className="list-decimal pl-4 space-y-1 text-[11px] text-slate-400 leading-relaxed">
+                      <li>
+                        Open{" "}
+                        <a
+                          href="https://console.firebase.google.com/project/rr-academia/firestore/data"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#E5C158] underline inline-flex items-center gap-0.5"
+                        >
+                          Firestore &gt; Data <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                        , select or create collection <strong className="text-white font-mono">adminUsers</strong>, and click <strong className="text-white">Add document</strong>.
+                      </li>
+                      <li>
+                        Set <strong className="text-white">Document ID</strong> to your copied UID: <code className="text-[#E5C158] font-mono font-bold">{authAttempt.uid}</code> <em className="text-amber-300">(Do NOT use your email as Document ID!)</em>.
+                      </li>
+                      <li>
+                        Add these exact document fields:
+                        <div className="bg-slate-950 p-2 rounded-lg font-mono text-[10px] text-slate-300 mt-1 space-y-0.5">
+                          <div>uid: &quot;{authAttempt.uid}&quot; (string)</div>
+                          <div>email: &quot;{authAttempt.email}&quot; (string)</div>
+                          <div>role: &quot;admin&quot; (string)</div>
+                          <div>active: true (boolean)</div>
+                        </div>
+                      </li>
+                      <li>Click <strong className="text-white">Save</strong>, then click &quot;Sign In to Dashboard&quot; below.</li>
+                    </ol>
+                  )}
+
+                  {authAttempt.stage === "role-denied" && (
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Your account document exists in <code className="text-white font-mono">adminUsers</code>, but does not have active administrative privileges. In Firebase Console &gt; Firestore &gt; adminUsers &gt; {authAttempt.uid}, verify that <code className="text-white font-mono">role</code> is set to <strong className="text-white">&quot;admin&quot;</strong> and <code className="text-white font-mono">active</code> is set to <strong className="text-white">true</strong>.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -253,11 +274,12 @@ export const AdminLoginPage: React.FC = () => {
                   id="adminEmail"
                   type="email"
                   required
+                  disabled={loading}
                   autoComplete="email"
                   placeholder="name@domain.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#D4AF37] transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#D4AF37] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -275,16 +297,18 @@ export const AdminLoginPage: React.FC = () => {
                   id="adminPassword"
                   type={showPassword ? "text" : "password"}
                   required
+                  disabled={loading}
                   autoComplete="current-password"
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#D4AF37] transition-colors"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#D4AF37] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 />
                 <button
                   type="button"
+                  disabled={loading}
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-slate-400 hover:text-white cursor-pointer transition-colors p-0.5"
+                  className="absolute right-3 top-3 text-slate-400 hover:text-white cursor-pointer transition-colors p-0.5 disabled:opacity-60"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -296,12 +320,12 @@ export const AdminLoginPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-[#D4AF37] via-[#E5C158] to-[#B38F26] text-[#0B132B] font-extrabold py-3 rounded-xl shadow-lg hover:brightness-105 active:scale-98 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-60"
+                className="w-full bg-gradient-to-r from-[#D4AF37] via-[#E5C158] to-[#B38F26] text-[#0B132B] font-extrabold py-3 rounded-xl shadow-lg hover:brightness-105 active:scale-98 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-[#0B132B] border-t-transparent rounded-full animate-spin" />
-                    <span>Verifying Credentials...</span>
+                    <span>Verifying Administrator Authorization...</span>
                   </>
                 ) : (
                   <>

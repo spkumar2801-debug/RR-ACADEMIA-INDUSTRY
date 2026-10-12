@@ -92,25 +92,11 @@ service cloud.firestore {
 
     // Role-based authorization verified directly against Cloud Firestore allowlist
     // Validates that request.auth.uid exists in adminUsers with role=='admin' and active==true
-    function isAdminByUid() {
+    function isAdmin() {
       return isAuthenticated() &&
         exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data.role == 'admin' &&
         get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data.active == true;
-    }
-
-    // Secondary email allowlist check: requires email_verified == true to eliminate impersonation risks
-    function isAdminByEmail() {
-      return isAuthenticated() &&
-        request.auth.token.email != null &&
-        request.auth.token.email_verified == true &&
-        exists(/databases/$(database)/documents/adminUsers/$(request.auth.token.email)) &&
-        get(/databases/$(database)/documents/adminUsers/$(request.auth.token.email)).data.role == 'admin' &&
-        get(/databases/$(database)/documents/adminUsers/$(request.auth.token.email)).data.active == true;
-    }
-
-    function isAdmin() {
-      return isAdminByUid() || isAdminByEmail();
     }
 
     // ------------------------------------------------------------------------
@@ -137,13 +123,11 @@ service cloud.firestore {
     // ------------------------------------------------------------------------
     // Collection 1: Administrator Allowlist Directory (adminUsers)
     // ------------------------------------------------------------------------
-    // Authenticated users can only read their own document to verify administrative privileges.
-    // Client-side writes are strictly prohibited to prevent privilege escalation.
+    // Authenticated users can only read their own UID-based document for authorization checks.
+    // Listing the collection and client-side writes are strictly prohibited.
     match /adminUsers/{userId} {
-      allow read: if isAuthenticated() && (
-        request.auth.uid == userId ||
-        (request.auth.token.email != null && request.auth.token.email_verified == true && request.auth.token.email == userId)
-      );
+      allow get: if isAuthenticated() && request.auth.uid == userId;
+      allow list: if false;
       allow write: if false;
     }
 

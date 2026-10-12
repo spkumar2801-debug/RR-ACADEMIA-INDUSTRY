@@ -52,47 +52,14 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
 
     try {
-      let adminDocRef = doc(db, "adminUsers", authUser.uid);
-      let adminDocSnap = null;
-      let lastError: any = null;
+      // 1. Direct UID-based document lookup: getDoc(doc(db, 'adminUsers', user.uid))
+      const adminDocRef = doc(db, "adminUsers", authUser.uid);
+      const adminDocSnap = await getDoc(adminDocRef);
 
-      // 1. Check by UID as Document ID
-      try {
-        const snap = await getDoc(adminDocRef);
-        if (snap.exists()) {
-          adminDocSnap = snap;
-        }
-      } catch (uidErr: any) {
-        lastError = uidErr;
-      }
-
-      // 2. Fallback: Check if document was created with email as Document ID
-      if ((!adminDocSnap || !adminDocSnap.exists()) && authUser.email) {
-        const emailKeys = [authUser.email.trim(), authUser.email.trim().toLowerCase()];
-        for (const emailKey of emailKeys) {
-          try {
-            const emailDocRef = doc(db, "adminUsers", emailKey);
-            const emailSnap = await getDoc(emailDocRef);
-            if (emailSnap.exists()) {
-              adminDocRef = emailDocRef;
-              adminDocSnap = emailSnap;
-              lastError = null;
-              break;
-            }
-          } catch (emailErr: any) {
-            if (!lastError) lastError = emailErr;
-          }
-        }
-      }
-
-      // If both checks failed with an error and no doc was found
-      if (!adminDocSnap || !adminDocSnap.exists()) {
-        if (lastError && (lastError.code === "permission-denied" || lastError.message?.includes("Missing or insufficient permissions"))) {
-          throw lastError;
-        }
-
+      // 2. Validate document existence
+      if (!adminDocSnap.exists()) {
         const notFoundErr: any = new Error(
-          `Authentication succeeded, but neither UID "${authUser.uid}" nor email "${authUser.email || ""}" is registered in the administrator directory (adminUsers collection in Cloud Firestore).`
+          `Authentication succeeded, but account UID "${authUser.uid}" is not registered in the administrator directory (adminUsers collection in Cloud Firestore).`
         );
         notFoundErr.code = "admin-not-found";
         notFoundErr.authenticatedUid = authUser.uid;
@@ -102,14 +69,28 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       const data = adminDocSnap.data() as Partial<AdminUserData>;
 
-      if (!data.active) {
-        const inactiveErr: any = new Error("Access revoked. This administrator account has been deactivated in Cloud Firestore.");
+      // 3. Confirm UID match if field is present in document
+      if (data.uid && data.uid !== authUser.uid) {
+        const mismatchErr: any = new Error(
+          `Document UID "${data.uid}" does not match authenticated UID "${authUser.uid}".`
+        );
+        mismatchErr.code = "admin-uid-mismatch";
+        mismatchErr.authenticatedUid = authUser.uid;
+        throw mismatchErr;
+      }
+
+      // 4. Validate active boolean state
+      if (typeof data.active !== "boolean" || !data.active) {
+        const inactiveErr: any = new Error(
+          "Access revoked. This administrator account has been deactivated in Cloud Firestore."
+        );
         inactiveErr.code = "admin-deactivated";
         inactiveErr.authenticatedUid = authUser.uid;
         inactiveErr.authenticatedEmail = authUser.email;
         throw inactiveErr;
       }
 
+      // 5. Validate admin role
       if (data.role !== "admin") {
         const roleErr: any = new Error(
           `Access restricted. Account UID "${authUser.uid}" has role "${data.role}" instead of "admin".`
@@ -132,7 +113,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // Distinguish Firestore security rules permission denial from missing records
       if (err.code === "permission-denied" || err.message?.includes("Missing or insufficient permissions")) {
         const permErr: any = new Error(
-          `Cloud Firestore Security Rules rejected the allowlist read with "Missing or insufficient permissions". Firebase Authentication succeeded (verified UID: ${authUser.uid}), but Firestore Security Rules in Firebase Console are blocking read access to collection "adminUsers".`
+          `Permission Denied: Cloud Firestore Security Rules rejected access to document adminUsers/${authUser.uid}. Please ensure firestore.rules has been published in the Firebase Console.`
         );
         permErr.code = "permission-denied";
         permErr.authenticatedUid = authUser.uid;
