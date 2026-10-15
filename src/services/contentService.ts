@@ -339,7 +339,12 @@ export async function getPartners(): Promise<PartnerItem[]> {
     try {
       const localItems: PartnerItem[] = JSON.parse(local);
       for (const item of localItems) {
-        if (!itemsMap.has(item.id)) {
+        const existing = itemsMap.get(item.id);
+        if (
+          !existing ||
+          (!existing.updatedAt && (item.updatedAt || item.logoUrl !== existing.logoUrl)) ||
+          (existing.updatedAt && item.updatedAt && new Date(item.updatedAt) >= new Date(existing.updatedAt))
+        ) {
           itemsMap.set(item.id, item);
         }
       }
