@@ -10,38 +10,41 @@ const PartnerEmblem: React.FC<{ name: string; logoUrl?: string; className?: stri
   logoUrl,
   className = ""
 }) => {
-  const [imgError, setImgError] = React.useState(false);
+  const normalized = name.toLowerCase();
+  const isUpl = normalized.includes("upl") || (Boolean(logoUrl) && logoUrl!.toLowerCase().includes("upl"));
 
-  if (logoUrl && !imgError) {
-    const isUpl = logoUrl.toLowerCase().includes("upl") || name.toLowerCase().includes("upl");
-    if (isUpl) {
-      return (
-        <div className="bg-[#0B132B] px-2.5 py-1.5 rounded-lg border border-slate-800 shadow-2xs flex items-center justify-center max-w-full">
+  if (isUpl) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 rounded-lg bg-[#0B132B] border border-slate-800 flex items-center justify-center p-1 flex-shrink-0 shadow-2xs">
           <img
-            src={logoUrl}
-            alt={`${name} emblem`}
-            className={`max-h-8 max-w-full object-contain ${className}`}
-            onError={() => setImgError(true)}
-            loading="lazy"
+            src="/images/upl-mark.png"
+            alt="UPL logo"
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = "/images/upl.png.jpeg";
+            }}
           />
         </div>
-      );
-    }
+        <span className="font-sans font-black text-lg tracking-wide text-slate-900">
+          UPL
+        </span>
+      </div>
+    );
+  }
 
+  if (logoUrl) {
     return (
       <img
         src={logoUrl}
         alt={`${name} emblem`}
         className={`max-h-10 max-w-full object-contain ${className}`}
-        onError={() => setImgError(true)}
         loading="lazy"
       />
     );
   }
 
   // Brand-true vector representations
-  const normalized = name.toLowerCase();
-
   if (normalized.includes("google")) {
     return (
       <div className="flex items-center gap-2">
@@ -103,13 +106,20 @@ const PartnerEmblem: React.FC<{ name: string; logoUrl?: string; className?: stri
 
   if (normalized.includes("upl")) {
     return (
-      <div className="bg-[#0B132B] px-2.5 py-1.5 rounded-lg border border-slate-800 shadow-2xs flex items-center justify-center max-w-full">
-        <img
-          src="/images/upl.png.jpeg"
-          alt="UPL University of Sustainable Technology"
-          className={`max-h-8 max-w-full object-contain ${className}`}
-          loading="lazy"
-        />
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 rounded-lg bg-[#0B132B] border border-slate-800 flex items-center justify-center p-1 flex-shrink-0 shadow-2xs">
+          <img
+            src="/images/upl-mark.png"
+            alt="UPL logo"
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = "/images/upl.png.jpeg";
+            }}
+          />
+        </div>
+        <span className="font-sans font-black text-lg tracking-wide text-slate-900">
+          UPL
+        </span>
       </div>
     );
   }

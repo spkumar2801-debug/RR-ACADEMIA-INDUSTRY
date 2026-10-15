@@ -35,8 +35,15 @@ interface GalleryPickerItem {
 
 const defaultAssets: GalleryPickerItem[] = [
   {
+    id: "asset-upl-mark",
+    title: "UPL Molecular Hexagon Logo Mark",
+    url: "/images/upl-mark.png",
+    category: "branding",
+    source: "Partner Logo"
+  },
+  {
     id: "asset-upl",
-    title: "UPL University of Sustainable Technology",
+    title: "UPL University Full Banner",
     url: "/images/upl.png.jpeg",
     category: "branding",
     source: "Institutional Logo"
