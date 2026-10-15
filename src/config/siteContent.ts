@@ -456,7 +456,7 @@ export const verifiedPartners: PartnerItem[] = [
   {
     id: "partner-upl",
     name: "UPL",
-    logoUrl: "",
+    logoUrl: "/images/upl.png.jpeg",
     description: "Global Sustainable Agriculture & Chemical Enterprise Partner for industrial internships and sustainability research.",
     category: "Industrial & Agrotech",
     websiteUrl: "https://www.upl-ltd.com",
